@@ -1,0 +1,7 @@
+# ビルド成果物・テストツール
+build/
+
+# AI エージェント関連
+.claude/
+CLAUDE.md
+
