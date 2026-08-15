@@ -28,7 +28,7 @@ if(DOBUTSU_BUILD_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(googletest)
-    add_executable(dobutsu_tests tests/types_test.cpp)
+    add_executable(dobutsu_tests tests/types_test.cpp tests/bitboard_test.cpp)
     target_link_libraries(dobutsu_tests PRIVATE dobutsu_core GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(dobutsu_tests)
