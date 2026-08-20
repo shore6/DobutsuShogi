@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(dobutsu VERSION 0.1 LANGUAGES CXX)
+project(dobutsu VERSION 0.2 LANGUAGES CXX)
 
 # オプション
 option(DOBUTSU_BUILD_TESTS "Build unit tests" ON)
