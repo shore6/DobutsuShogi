@@ -73,6 +73,17 @@ build/dobutsu_cli
 
 Windows では `build\dobutsu_cli.exe`。
 
+## 個別テスト時
+
+```
+g++ -std=c++20 -Wall -Wextra -Iinclude -o path/target.exe path/target.cpp src/*.cpp
+```
+
+`main` 関数入りのテストファイルを書き、それをビルド、実行して動作確認を行いたいときに用いる。
+プロジェクトルートから実行する。
+なお、`-Wall`, `-Wextra` は CMake 側では付けていないため一度これで確かめる。
+
+
 ## オプション
 
 | オプション | 既定 | 意味 |
