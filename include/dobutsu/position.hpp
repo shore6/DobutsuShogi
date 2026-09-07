@@ -4,9 +4,15 @@
 #include <string_view>
 #include <dobutsu/types.hpp>
 #include <dobutsu/bitboard.hpp>
+#include <dobutsu/attack.hpp>
 #include <optional>
 
 namespace dobutsu {
+
+    struct StateInfo{
+        Piece      captured;    // とった駒 or NO_PIECE
+        StateInfo* previous;    // 一手前のStatuInfo
+    };
 
     class Position{
         private:
@@ -17,6 +23,7 @@ namespace dobutsu {
             std::uint16_t hand_[COLOR_NB]{};    // 持ち駒
             std::uint16_t ply_{};               // 手数
             Color sideToMove_{};                // どちらの手番か
+            StateInfo* st_{};                   // 現在の StateInfo
             
             /* 定数 */
             static constexpr std::uint8_t HAND_SHIFT[PIECE_TYPE_NB] = {0, 0, 0, 2, 4, 0};    // きりん([GIRAFFE]), ぞう([ELEPHANT]), ひよこ([CHICK]) 以外は引かない、使う側で制御すること
@@ -67,8 +74,24 @@ namespace dobutsu {
 
             constexpr Square lion_square(Color c) const { return pieces(c, LION).lsb(); }   // 盤面に LION がいることを呼び出し側で保証すること
 
+            void do_move(Move m, StateInfo& st);    // 指す場所が範囲内か、打つ場所が空いてるかなどは呼び出し側で保証すること
+            void undo_move(Move m);
+
             // pos の整合性をチェック
-            // 種類ごとの駒数、ライオンの色など。すべてではない。
-            bool is_consistent() const;
+            bool is_consistent() const;     // Position 内部の整合性
+            bool is_legal_position() const; // ゲームのルールに基づく局面の妥当性
+
+            bool is_attacked(Square s, Color by) const{
+                for(PieceType pt : {LION, GIRAFFE, ELEPHANT, CHICK, HEN}){
+                    if(attacks_from(pt, ~by, s) & pieces(by, pt)) return true;
+                }
+                return false;
+            }
+
+            /* 終局判定まわり */
+            // いずれのメソッドも、両方のライオンが盤上にいることを前提として呼ぶこと。
+            bool can_catch() const { return is_attacked(lion_square(~sideToMove_), sideToMove_); }
+            bool is_tried() const { return (rank_of(lion_square(~sideToMove_)) == (sideToMove_ == BLACK ? RANK_D : RANK_A)); }
+            bool is_terminal() const { return can_catch() || is_tried(); }
     };
 }

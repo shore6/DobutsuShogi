@@ -23,8 +23,8 @@ namespace dobutsu {
     }
 
     std::string move_to_usi(Move m){
+        if(m == Move::NONE) return "";
         std::string out;
-
         if(is_drop(m)){
             // 打ち手
             out += DROP_PIECE[dropped_piece(m)];
@@ -42,15 +42,19 @@ namespace dobutsu {
     }
 
     Move move_from_usi(std::string_view usi){
+        if(usi.size() != 4 && usi.size() != 5) return Move::NONE;
+        const Square from = square_from_usi(usi.substr(0, 2));
+        const Square to = square_from_usi(usi.substr(2, 2));
+        if(from == to) return Move::NONE;
         if(usi.size() == 4){
-            if(square_from_usi(usi.substr(0, 2)) != SQ_NONE && square_from_usi(usi.substr(2, 2)) != SQ_NONE){
-                return make_move(square_from_usi(usi.substr(0, 2)), square_from_usi(usi.substr(2, 2)), false);
-            }else if((usi[0] == DROP_PIECE[GIRAFFE] || usi[0] == DROP_PIECE[ELEPHANT] || usi[0] == DROP_PIECE[CHICK]) && usi[1] == '*' && square_from_usi(usi.substr(2, 2)) != SQ_NONE){
+            if(from != SQ_NONE && to != SQ_NONE){
+                return make_move(from, to, false);
+            }else if((usi[0] == DROP_PIECE[GIRAFFE] || usi[0] == DROP_PIECE[ELEPHANT] || usi[0] == DROP_PIECE[CHICK]) && usi[1] == '*' && to != SQ_NONE){
                 PieceType pt = usi[0] == DROP_PIECE[GIRAFFE] ? GIRAFFE : (usi[0] == DROP_PIECE[ELEPHANT] ? ELEPHANT : CHICK);
-                return make_drop(pt, square_from_usi(usi.substr(2, 2)));
+                return make_drop(pt, to);
             }
-        }else if(usi.size() == 5 && square_from_usi(usi.substr(0, 2)) != SQ_NONE && square_from_usi(usi.substr(2, 2)) != SQ_NONE && usi[4] == '+'){
-            return make_move(square_from_usi(usi.substr(0, 2)), square_from_usi(usi.substr(2, 2)), true);
+        }else if(from != SQ_NONE && to != SQ_NONE && usi[4] == '+'){
+            return make_move(from, to, true);
         }
         return Move::NONE;
     }

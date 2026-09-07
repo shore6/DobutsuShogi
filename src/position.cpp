@@ -242,21 +242,41 @@ namespace dobutsu {
             pos.ply_ = n;
 
             // 駒種ごとの総数およびライオンの色を確認
-            if(!pos.is_consistent()) return std::nullopt;
+            if(!pos.is_consistent() || !pos.is_legal_position()) return std::nullopt;
             return pos; // すべてパス
         }
 
+        // Position 内部の変数同士で齟齬がないか
         bool Position::is_consistent() const {
-            // board_ の操作
+            // board_ の走査
             Bitboard bb_color[COLOR_NB]{};
             Bitboard bb_type[PIECE_TYPE_NB]{};
-            int pt_count[PIECE_TYPE_NB]{};
-            int lion_count[COLOR_NB]{};
             for(int sq = 0; sq < SQ_NB; sq++){
                 Piece p = board_[Square(sq)];
                 if(p != NO_PIECE){
                     bb_color[color_of(p)].set(Square(sq));
                     bb_type[type_of(p)].set(Square(sq));
+                }
+            }
+
+            // チェック
+            for(Color c : {BLACK, WHITE}){
+                if(bb_color[c] != byColor_[c]) return false;
+            }
+            for(int pt = NO_PIECE_TYPE; pt < PIECE_TYPE_NB; pt++){
+                if(bb_type[PieceType(pt)] != byType_[PieceType(pt)]) return false;
+            }
+
+            return true;
+        }
+
+        // 盤面がどうぶつしょうぎのルールに則ったものか確認。盤面に到達可能かは無視。
+        bool Position::is_legal_position() const {
+            int pt_count[PIECE_TYPE_NB]{};
+            int lion_count[COLOR_NB]{};
+            for(int sq = 0; sq < SQ_NB; sq++){
+                Piece p = board_[Square(sq)];
+                if(p != NO_PIECE){
                     pt_count[type_of(p)]++;
                     if(type_of(p) == LION) lion_count[color_of(p)]++;
                     if(type_of(p) == HEN) pt_count[CHICK]++;
@@ -270,19 +290,71 @@ namespace dobutsu {
             }
 
             // チェック
-            for(Color c : {BLACK, WHITE}){
-                if(bb_color[c] != byColor_[c]) return false;
-            }
             for(PieceType pt : {LION, GIRAFFE, ELEPHANT, CHICK}){
                 if(pt_count[pt] != 2) return false;
-            }
-            for(int pt = NO_PIECE_TYPE; pt < PIECE_TYPE_NB; pt++){
-                if(bb_type[PieceType(pt)] != byType_[PieceType(pt)]) return false;
             }
             if(lion_count[BLACK] != 1 || lion_count[WHITE] != 1) return false;
 
             return true;
         }
+        
+        
+        void Position::do_move(Move m, StateInfo& st){
+            const Color us = sideToMove_;
+            const Square to = to_sq(m);
+            
+            st.previous = st_;
+            st.captured = board_[to];   // 取ってなければ NO_PIECE
+            st_ = &st;
 
+            if(is_drop(m)){
+                remove_hand(us, dropped_piece(m));
+                put_piece(make_piece(us, dropped_piece(m)), to);
+            }else{
+                const Square from = from_sq(m);
+                if(st.captured != NO_PIECE){
+                    remove_piece(to);
+                    if(const PieceType hp = hand_piece_of(st.captured); hp != NO_PIECE_TYPE){
+                        add_hand(us, hp);
+                    }
+                }
+                if(is_promotion(m)){
+                    put_piece(make_piece(us, HEN), to);
+                }else{
+                    put_piece(board_[from], to);
+                }
+                remove_piece(from);
+            }
+
+            sideToMove_ = ~us;
+            ply_++;
+        }
+
+        void Position::undo_move(Move m){
+            ply_--;
+            sideToMove_ = ~sideToMove_;
+            
+            const Square to = to_sq(m);
+            if(is_drop(m)){
+                add_hand(sideToMove_, dropped_piece(m));
+                remove_piece(to);
+            }else{
+                const Square from = from_sq(m);
+                PieceType pt = type_of(board_[to]);
+                remove_piece(to);
+                if(st_->captured != NO_PIECE){
+                    if(const PieceType hp = hand_piece_of(st_->captured); hp != NO_PIECE_TYPE){
+                        remove_hand(sideToMove_, hp);
+                    }
+                    put_piece(st_->captured, to);
+                }
+                if(is_promotion(m)){
+                    pt = CHICK;
+                }
+                put_piece(make_piece(sideToMove_, pt), from);
+            }
+
+            st_ = st_->previous;
+        }
 }
 

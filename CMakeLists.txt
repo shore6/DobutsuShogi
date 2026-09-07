@@ -5,7 +5,7 @@ project(dobutsu VERSION 0.2 LANGUAGES CXX)
 option(DOBUTSU_BUILD_TESTS "Build unit tests" ON)
 
 # コアライブラリ
-add_library(dobutsu_core STATIC src/types.cpp src/position.cpp)
+add_library(dobutsu_core STATIC src/types.cpp src/position.cpp src/movegen.cpp)
 target_include_directories(dobutsu_core PUBLIC include)
 target_compile_features(dobutsu_core PUBLIC cxx_std_20)
 
@@ -28,7 +28,7 @@ if(DOBUTSU_BUILD_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(googletest)
-    add_executable(dobutsu_tests tests/types_test.cpp tests/bitboard_test.cpp tests/position_test.cpp tests/types_move_test.cpp)
+    add_executable(dobutsu_tests tests/types_test.cpp tests/bitboard_test.cpp tests/position_test.cpp tests/types_move_test.cpp tests/attack_test.cpp tests/movegen_test.cpp tests/perft.cpp)
     target_link_libraries(dobutsu_tests PRIVATE dobutsu_core GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(dobutsu_tests)

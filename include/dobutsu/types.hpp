@@ -62,13 +62,13 @@ namespace dobutsu {
     constexpr std::uint8_t PT_MASK = 0b111;       // 駒種のマスク
     constexpr std::uint8_t SQ_PER_RANK = FILE_NB;
 
-    constexpr std::uint16_t MOVES_DESTINATION_SHIFT = 0;    // 行先のマス
-    constexpr std::uint16_t MOVES_SOURCE_SHIFT = 4;         // 元のマス
-    constexpr std::uint16_t MOVES_PROMOTION_SHIFT = 8;      // 成りフラグ
-    constexpr std::uint16_t MOVES_PIECETYPE_SHIFT = 9;      // 駒種
-    constexpr std::uint16_t MOVES_SQUARE_MASK = 0b1111;     // マス抽出マスク
-    constexpr std::uint16_t MOVES_PIECETYPE_MASK = 0b111;   // 駒種抽出マスク
-    constexpr std::uint16_t MOVES_FLAG_MASK = 0b1;          // フラグ抽出マスク
+    constexpr std::uint16_t MOVE_DESTINATION_SHIFT = 0;    // 行先のマス
+    constexpr std::uint16_t MOVE_SOURCE_SHIFT = 4;         // 元のマス
+    constexpr std::uint16_t MOVE_PROMOTION_SHIFT = 8;      // 成りフラグ
+    constexpr std::uint16_t MOVE_PIECETYPE_SHIFT = 9;      // 駒種
+    constexpr std::uint16_t MOVE_SQUARE_MASK = 0b1111;     // マス抽出マスク
+    constexpr std::uint16_t MOVE_PIECETYPE_MASK = 0b111;   // 駒種抽出マスク
+    constexpr std::uint16_t MOVE_FLAG_MASK = 0b1;          // フラグ抽出マスク
 
 
     /* 変換関数 */
@@ -106,26 +106,26 @@ namespace dobutsu {
 
     /* MOVE 関連 */
     constexpr Move make_move(Square from, Square to, bool promote = false){
-        return Move((std::uint16_t(to) << MOVES_DESTINATION_SHIFT) | (std::uint16_t(from) << MOVES_SOURCE_SHIFT) | (std::uint16_t(promote) << MOVES_PROMOTION_SHIFT));
+        return Move((std::uint16_t(to) << MOVE_DESTINATION_SHIFT) | (std::uint16_t(from) << MOVE_SOURCE_SHIFT) | (std::uint16_t(promote) << MOVE_PROMOTION_SHIFT));
     }
 
     constexpr Move make_drop(PieceType pt, Square to){
-        return Move((std::uint16_t(pt) << MOVES_PIECETYPE_SHIFT) | (std::uint16_t(SQ_NONE) << MOVES_SOURCE_SHIFT) | (std::uint16_t(to) << MOVES_DESTINATION_SHIFT)); // LION や HEN 等は呼び出し側で渡さないことを保証
+        return Move((std::uint16_t(pt) << MOVE_PIECETYPE_SHIFT) | (std::uint16_t(SQ_NONE) << MOVE_SOURCE_SHIFT) | (std::uint16_t(to) << MOVE_DESTINATION_SHIFT)); // LION や HEN 等は呼び出し側で渡さないことを保証
     }
 
     constexpr Square to_sq(Move m){
         std::uint16_t move = std::uint16_t(m);
-        return Square((move >> MOVES_DESTINATION_SHIFT) & MOVES_SQUARE_MASK);
+        return Square((move >> MOVE_DESTINATION_SHIFT) & MOVE_SQUARE_MASK);
     }
 
     constexpr Square from_sq(Move m){
         std::uint16_t move = std::uint16_t(m);
-        return Square((move >> MOVES_SOURCE_SHIFT) & MOVES_SQUARE_MASK);
+        return Square((move >> MOVE_SOURCE_SHIFT) & MOVE_SQUARE_MASK);
     }
 
     constexpr PieceType dropped_piece(Move m){
         std::uint16_t move = std::uint16_t(m);
-        return PieceType((move >> MOVES_PIECETYPE_SHIFT) & MOVES_PIECETYPE_MASK);
+        return PieceType((move >> MOVE_PIECETYPE_SHIFT) & MOVE_PIECETYPE_MASK);
     }
 
     constexpr bool is_drop(Move m){
@@ -134,9 +134,22 @@ namespace dobutsu {
 
     constexpr bool is_promotion(Move m){
         std::uint16_t move = std::uint16_t(m);
-        return ((move >> MOVES_PROMOTION_SHIFT) & MOVES_FLAG_MASK) > 0;
+        return ((move >> MOVE_PROMOTION_SHIFT) & MOVE_FLAG_MASK) > 0;
     }
 
     std::string move_to_usi(Move m);
     Move move_from_usi(std::string_view usi);
+
+    constexpr PieceType hand_piece_of(Piece captured){
+        switch(type_of(captured)){
+            case LION : return NO_PIECE_TYPE;
+            case HEN : return CHICK;
+            case GIRAFFE : 
+            case ELEPHANT : 
+            case CHICK : return type_of(captured);
+            case NO_PIECE_TYPE :
+            case PIECE_TYPE_NB : return NO_PIECE_TYPE;
+        }
+        return NO_PIECE_TYPE;
+    }
 }
