@@ -29,4 +29,18 @@ namespace dobutsu {
             }
         }
     }
+
+    std::uint64_t perft(Position& pos, int depth){
+        if(pos.is_terminal()) return 1;
+        if(depth == 0) return 1;
+        MoveList ml(pos);
+        std::uint64_t cnt = 0;
+        for(Move m : ml){
+            StateInfo st;
+            pos.do_move(m, st);
+            cnt += perft(pos, depth - 1);
+            pos.undo_move(m);
+        }
+        return cnt;
+    }
 }

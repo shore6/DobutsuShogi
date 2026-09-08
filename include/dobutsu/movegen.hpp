@@ -29,4 +29,6 @@ namespace dobutsu {
             const Move* end() const { return moves_ + size_; }
             int size() const { return size_; }
     };
+
+    std::uint64_t perft(Position&, int);
 }

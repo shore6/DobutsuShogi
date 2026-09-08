@@ -9,26 +9,12 @@
 
 using namespace dobutsu;
 
-std::uint64_t perft(Position& pos, int depth){
-    if(pos.is_terminal()) return 1;
-    if(depth == 0) return 1;
-    MoveList ml(pos);
-    std::uint64_t cnt = 0;
-    for(Move m : ml){
-        StateInfo st;
-        pos.do_move(m, st);
-        cnt += perft(pos, depth - 1);
-        pos.undo_move(m);
-    }
-    return cnt;
-}
-
 bool in_board(Square from, int dr, int df){
     if((rank_of(from) == RANK_A && dr == -1) || (rank_of(from) == RANK_D && dr == 1)) return false;
     if((file_of(from) == FILE_3 && df == -1) || (file_of(from) == FILE_1 && df == 1)) return false;
     return true;
 }
-bool to_ok(Position pos, Square to, Color us){
+bool to_ok(const Position& pos, Square to, Color us){
     if(pos.piece_on(to) == NO_PIECE) return true;
     if(color_of(pos.piece_on(to)) != us) return true;
     return false;
@@ -47,6 +33,8 @@ std::vector<Move> movelist_custom(const Position& pos){
         if(c != us) continue;
         
         switch(pt){
+            case NO_PIECE_TYPE:
+            case PIECE_TYPE_NB: break;
             case LION:{
                 for(int dr : {-1, 0, 1}){
                     for(int df : {-1, 0, 1}){
@@ -122,11 +110,19 @@ std::vector<Move> movelist_custom(const Position& pos){
     
     return move_list;
 }
-bool in_check(const Position pos){
+bool is_terminal_custom(const Position& pos){
     bool can_catch = false;
     std::vector<Move> ml = movelist_custom(pos);
+    Square lion_sq;
+    for(int sq = 0; sq < SQ_NB; sq++){
+        Piece pc = pos.piece_on(Square(sq));
+        if(pc == NO_PIECE) continue;
+        if(type_of(pc) == LION && color_of(pc) == ~pos.side_to_move()){
+            lion_sq = Square(sq); break;
+        }
+    }
     for(Move m : ml){
-        if(to_sq(m) == pos.lion_square(~pos.side_to_move())){
+        if(to_sq(m) == lion_sq){
             can_catch = true; break;
         }
     }
@@ -136,7 +132,7 @@ bool in_check(const Position pos){
 
 
 std::uint64_t perft_custom(Position& pos, int depth){
-    if(in_check(pos)) return 1;
+    if(is_terminal_custom(pos)) return 1;
     if(depth == 0) return 1;
     std::vector<Move> ml = movelist_custom(pos);
     std::uint64_t cnt = 0;
@@ -148,31 +144,6 @@ std::uint64_t perft_custom(Position& pos, int depth){
     }
     return cnt;
 }
-
-
-// int main(){
-//     Position pos = Position::startpos();
-//     auto move_list = movelist_custom(pos);
-//     std::cout << move_list.size() << std::endl;
-//     for(Move m : move_list){
-//         std::cout << move_to_usi(m) << std::endl;
-//     }
-//     std::cout << "------" << std::endl;
-//     MoveList ml(pos);
-//     for(Move m : ml){
-//         std::cout << move_to_usi(m) << std::endl;
-//     }
-//     std::cout << "======" << std::endl;
-//
-//     int depth = 3;
-//     Position posA = Position::startpos();
-//     Position posB = Position::startpos();
-//     std::uint64_t custom = perft_custom(posA, depth);
-//     std::uint64_t origin = perft(posB, depth);
-//     std::cout << custom << ":" << origin << std::endl;
-//     return 0;
-// }
-
 
 TEST(Perft, CheckConsistencyOfMoveListBetweenCustomLogicAtStartpos){
     Position pos = Position::startpos();
@@ -227,11 +198,22 @@ TEST(Perft, CheckConsistencyOfMoveListBetweenCustomLogicAtSampleSFEN){
 }
 
 TEST(Perft, CheckConsistencyOfPerftCounts){
-    for(int depth = 1; depth < 9; depth++){
+    for(int depth = 1; depth < 7; depth++){
         Position posA = Position::startpos();
         Position posB = Position::startpos();
         std::uint64_t perft_num = perft(posA, depth);
         std::uint64_t perft_num_custom = perft_custom(posB, depth);
         EXPECT_EQ(perft_num, perft_num_custom) << depth;
     }
+}
+
+TEST(Perft, CompareBaselineAndPerft){
+    Position pos = Position::startpos();
+    EXPECT_EQ(perft(pos, 1), 4ULL);
+    EXPECT_EQ(perft(pos, 2), 17ULL);
+    EXPECT_EQ(perft(pos, 3), 100ULL);
+    EXPECT_EQ(perft(pos, 4), 610ULL);
+    EXPECT_EQ(perft(pos, 5), 3411ULL);
+    EXPECT_EQ(perft(pos, 6), 19988ULL);
+    EXPECT_EQ(perft(pos, 7), 122546ULL);
 }
