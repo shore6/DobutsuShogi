@@ -58,6 +58,9 @@ namespace dobutsu {
     // 打ち手
     enum class Move : std::uint16_t{ NONE = 0 };
 
+    using Key = std::uint64_t;
+
+    /* 定数 */
     constexpr std::uint8_t COLOR_SHIFT = 3;       // 手番のシフト量
     constexpr std::uint8_t PT_MASK = 0b111;       // 駒種のマスク
     constexpr std::uint8_t SQ_PER_RANK = FILE_NB;
