@@ -5,12 +5,14 @@
 #include <dobutsu/types.hpp>
 #include <dobutsu/bitboard.hpp>
 #include <dobutsu/attack.hpp>
+#include <dobutsu/zobrist.hpp>
 #include <optional>
 
 namespace dobutsu {
 
     struct StateInfo{
         Piece      captured;    // とった駒 or NO_PIECE
+        Key        key;         // その手によって上書きされる局面の key
         StateInfo* previous;    // 一手前のStatuInfo
     };
 
@@ -23,6 +25,7 @@ namespace dobutsu {
             std::uint16_t hand_[COLOR_NB]{};    // 持ち駒
             std::uint16_t ply_{};               // 手数
             Color sideToMove_{};                // どちらの手番か
+            Key key_{};                         // zobrist
             StateInfo* st_{};                   // 現在の StateInfo
             
             /* 定数 */
@@ -34,19 +37,25 @@ namespace dobutsu {
                 board_[s] = pc;
                 byType_[type_of(pc)].set(s);
                 byColor_[color_of(pc)].set(s);
+                key_ ^= Zobrist.psq[pc][s];
             }
             constexpr void remove_piece(Square s){
                 Piece pc = board_[s];
                 byType_[type_of(pc)].reset(s);
                 byColor_[color_of(pc)].reset(s);
+                key_ ^= Zobrist.psq[pc][s];
                 board_[s] = NO_PIECE;
             }
 
             /* 持ち駒を実際に書き換える操作 */
             constexpr void add_hand(Color c, PieceType pt){ // 過剰に(3枚以上)増やさないのは呼び出し側で保証すること
+                const int n = hand_count(c, pt);
+                key_ ^= Zobrist.hand[c][pt][n] ^ Zobrist.hand[c][pt][n+1];
                 hand_[c] += (1 << HAND_SHIFT[pt]);
             }    
             constexpr void remove_hand(Color c, PieceType pt){ // 持っていない駒を減らさないのも呼び出し側で保証すること
+                const int n = hand_count(c, pt);
+                key_ ^= Zobrist.hand[c][pt][n] ^ Zobrist.hand[c][pt][n-1];
                 hand_[c] -= (1 << HAND_SHIFT[pt]);
             }
         
@@ -64,6 +73,7 @@ namespace dobutsu {
 
             constexpr Color side_to_move() const { return sideToMove_; }
             constexpr int ply() const {return ply_; }
+            constexpr Key key() const { return key_; }
             constexpr Piece piece_on(Square s) const { return board_[s]; }    // 呼び出し側で s の範囲を検査すること
             constexpr int hand_count(Color c, PieceType pt) const { return (hand_[c] >> HAND_SHIFT[pt]) & HAND_MASK; }
 
@@ -80,6 +90,7 @@ namespace dobutsu {
             // pos の整合性をチェック
             bool is_consistent() const;     // Position 内部の整合性
             bool is_legal_position() const; // ゲームのルールに基づく局面の妥当性
+            Key compute_key() const;
 
             bool is_attacked(Square s, Color by) const{
                 for(PieceType pt : {LION, GIRAFFE, ELEPHANT, CHICK, HEN}){

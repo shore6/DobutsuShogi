@@ -203,6 +203,7 @@ namespace dobutsu {
             // 手番を取得
             if(fields[1] == "b" || fields[1] == "w"){
                 pos.sideToMove_ = (fields[1] == "b" ? BLACK : WHITE);
+                pos.key_ ^= (pos.side_to_move() == WHITE ? Zobrist.side : 0);
             }else return std::nullopt;
 
             // 持ち駒の解析
@@ -267,6 +268,8 @@ namespace dobutsu {
                 if(bb_type[PieceType(pt)] != byType_[PieceType(pt)]) return false;
             }
 
+            if(key_ != compute_key()) return false;
+
             return true;
         }
 
@@ -297,6 +300,24 @@ namespace dobutsu {
 
             return true;
         }
+
+        Key Position::compute_key() const {
+            Key k = 0;
+            for(int s = 0; s < SQ_NB; s++){
+                Piece pc = piece_on(Square(s));
+                k ^= Zobrist.psq[pc][s];
+            }
+
+            for(Color c: {BLACK, WHITE}){
+                for(PieceType pt : {GIRAFFE, ELEPHANT, CHICK}){
+                    k ^= Zobrist.hand[c][pt][hand_count(c, pt)];
+                }
+            }
+            
+            if(side_to_move() == WHITE) k ^= Zobrist.side;
+
+            return k;
+        }
         
         
         void Position::do_move(Move m, StateInfo& st){
@@ -305,6 +326,7 @@ namespace dobutsu {
             
             st.previous = st_;
             st.captured = board_[to];   // 取ってなければ NO_PIECE
+            st.key = key_;
             st_ = &st;
 
             if(is_drop(m)){
@@ -327,12 +349,14 @@ namespace dobutsu {
             }
 
             sideToMove_ = ~us;
+            key_ ^= Zobrist.side;
             ply_++;
         }
 
         void Position::undo_move(Move m){
             ply_--;
             sideToMove_ = ~sideToMove_;
+            key_ ^= Zobrist.side;
             
             const Square to = to_sq(m);
             if(is_drop(m)){

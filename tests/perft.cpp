@@ -145,6 +145,22 @@ std::uint64_t perft_custom(Position& pos, int depth){
     return cnt;
 }
 
+std::uint64_t perft_check_zobrist(Position& pos, int depth = 4){
+    if(is_terminal_custom(pos)) return 1;
+    if(depth == 0) return 1;
+    std::vector<Move> ml = movelist_custom(pos);
+    std::uint64_t cnt = 0;
+    for(Move m : ml){
+        StateInfo st;
+        pos.do_move(m, st);
+        EXPECT_EQ(pos.key(), pos.compute_key());
+        cnt += perft_check_zobrist(pos, depth -1);
+        pos.undo_move(m);
+    }
+    return cnt;
+    
+}
+
 TEST(Perft, CheckConsistencyOfMoveListBetweenCustomLogicAtStartpos){
     Position pos = Position::startpos();
     auto ml_custom = movelist_custom(pos);
@@ -216,4 +232,26 @@ TEST(Perft, CompareBaselineAndPerft){
     EXPECT_EQ(perft(pos, 5), 3411ULL);
     EXPECT_EQ(perft(pos, 6), 19988ULL);
     EXPECT_EQ(perft(pos, 7), 122546ULL);
+}
+
+TEST(Perft, CheckAllPerftNodeZobrists){
+    const std::string sfen_list[] = {
+        "l2/1CC/3/ELG b eg 3",
+        "l2/1cc/3/ELG w EG 10",
+        "l2/3/1CC/ELG b eg 13",
+        "l2/3/1cc/LEG w eg 22",
+        "gle/1c1/1C1/ELG b - 1",
+        "+Cle/3/3/EL+c b 2G 7",
+        "l2/1C1/3/2L b 2G2ec 5",
+        "gle/1c1/1C1/ELG w - 101",
+        "gle/3/3/ELG w 2c 170",
+        "gle/1c1/1+C1/ELG b - 1",
+        "gl1/1c1/1C1/1LG b Ee 1",
+        "+Cle/3/3/EL+c w 2G 7",
+        "l2/3/3/2L b 2GC2ec 5"
+    };
+    for(const std::string& sfen : sfen_list){
+        auto pos = Position::from_sfen(sfen);
+        perft_check_zobrist(pos.value());
+    }
 }
