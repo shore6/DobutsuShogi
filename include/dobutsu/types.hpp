@@ -60,6 +60,8 @@ namespace dobutsu {
 
     using Key = std::uint64_t;
 
+    enum class GameResult : std::uint8_t { ONGOING, CATCH, TRY, REPETITION };
+
     /* 定数 */
     constexpr std::uint8_t COLOR_SHIFT = 3;       // 手番のシフト量
     constexpr std::uint8_t PT_MASK = 0b111;       // 駒種のマスク

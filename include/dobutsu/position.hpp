@@ -104,5 +104,14 @@ namespace dobutsu {
             bool can_catch() const { return is_attacked(lion_square(~sideToMove_), sideToMove_); }
             bool is_tried() const { return (rank_of(lion_square(~sideToMove_)) == (sideToMove_ == BLACK ? RANK_D : RANK_A)); }
             bool is_terminal() const { return can_catch() || is_tried(); }
+
+            bool is_repetition() const; // これはハッシュを含む
+            GameResult result() const {
+                if(can_catch()) return GameResult::CATCH;
+                else if(is_tried()) return GameResult::TRY;
+                else if(is_repetition()) return GameResult::REPETITION;
+                else return GameResult::ONGOING;
+            };
+
     };
 }

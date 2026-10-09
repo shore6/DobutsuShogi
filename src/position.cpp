@@ -10,6 +10,7 @@
 #include <dobutsu/bitboard.hpp>
 #include <dobutsu/position.hpp>
 
+
 namespace {
     constexpr char PIECE_CHAR[dobutsu::PIECE_NB] = {
     ' ', 'L', 'G', 'E', 'C', 'H', ' ', ' ',
@@ -379,6 +380,19 @@ namespace dobutsu {
             }
 
             st_ = st_->previous;
+        }
+
+
+        bool Position::is_repetition() const {
+            const StateInfo* p = st_;
+            Key k = key(); int cnt = 1;
+            while(p != nullptr){    // ply = 1 対策
+                if(p->previous == nullptr) break;
+                if(p->previous->key == k) cnt++;
+                if(cnt == 3) break;
+                p = p->previous->previous;
+            }
+            return cnt == 3;
         }
 }
 
