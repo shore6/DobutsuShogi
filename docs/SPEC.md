@@ -538,6 +538,11 @@ public:
 };
 ```
 
+M5 の骨格（D-025）では、この API の部分集合だけを実装する。
+`SearchLimits` は `depth` のみ、`SearchResult` は `bestMove`・`score`・`depth`・`nodes` のみとし、
+置換表（コンストラクタの引数と `clear()`）、`stop()`、`pv` は後の段階で加える。
+骨格の αβ は fail-soft の negamax で、評価値の規約は第 7.2 節に従う。
+
 ### 6.4 入出力
 
 ```cpp
@@ -557,7 +562,8 @@ std::string move_to_kif(const Position& pos, Move m);   // ☗2二ひよこ
 | --- | --- |
 | `show <sfen \| startpos>` | 局面を ASCII で表示する |
 | `perft <depth> [sfen]` | 各初手ごとの葉の数（divide）と合計、所要時間を表示する |
-| `play [--black P] [--white P] [--seed N] [sfen]` | 対局する。`P` は `human`（既定）または `random` |
+| `go <depth> [sfen]` | 固定深さで探索し、最善手・評価値・ノード数・所要時間を表示する |
+| `play [--black P] [--white P] [--depth D] [--seed N] [sfen]` | 対局する。`P` は `human`（既定）・`random`・`search`。`D` は `search` の探索深さ（既定 6） |
 
 `play` の入力は 1 行に 1 つで、次のいずれかとする。
 
@@ -571,6 +577,11 @@ std::string move_to_kif(const Position& pos, Move m);   // ☗2二ひよこ
 
 終局は手番が回ってきた時点で `result()` によって判定する（第 2.4 節）。
 田中方式に従うため、キャッチは「ライオンを取った時点」ではなく「ライオンを取れる局面で手番が回ってきた時点」で成立する。
+
+評価値の表示では、勝敗が確定した値（`|score| > VALUE_MATE - MAX_PLY`）を点数ではなく手数で示す。
+`VALUE_MATE - n` は「n 手後に手番側の勝ちが確定する」、`-(VALUE_MATE - n)` は「n 手後に負けが確定する」を意味する。
+
+`search` は乱数を使わないため、同じ局面からは常に同じ手を指す。
 
 `--seed` を与えると `random` の着手が再現可能になる。
 `random` 同士の対局を固定の seed で流すことが、`play` の自動テストになる。
@@ -602,11 +613,14 @@ std::string move_to_kif(const Position& pos, Move m);   // ☗2二ひよこ
 - null move pruning は導入しない。盤が狭く zugzwang が頻出すると見込まれるため、効果より危険が大きい。
 
 終局判定は探索の内部でも必要になる。
-キャッチとトライは着手適用後に即座に判定でき、いずれも探索を打ち切る。
-千日手は探索経路上での繰り返しを検出し、評価値 0 を返す。
+各ノードに入った時点で `result()` を呼び、終局していれば探索を打ち切る（D-019, D-026）。
+`CATCH` は手番側の勝ち、`TRY` は手番側の負け、`REPETITION` は評価値 0 である。
+この判定は深さ 0 で評価関数を呼ぶより先に行う。
 
-**詰みスコアの扱い**：勝敗が確定した局面の評価値は、`MATE - ply` の形で手数を織り込む。
-これにより、同じ勝ちでも短い勝ち筋が選ばれる。
+**評価値の規約**：評価値は `int` で、常に手番側から見た値とする（negamax）。
+勝敗が確定した局面は `VALUE_MATE - ply` の形で手数を織り込む（`VALUE_MATE = 32000`、`ply` は根からの手数）。
+これにより、同じ勝ちなら短い勝ち筋、同じ負けなら長い負け筋が選ばれる。
+αβ の初期窓には `VALUE_INFINITE = 32001` を使う（D-026）。
 
 ## 8. USI 層の設計（将来）
 
