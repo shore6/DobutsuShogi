@@ -116,8 +116,8 @@ TEST(Search, NodesOfAlphabetaAreLessThanNodesOfMinimax){
         int score_mm = minimax(pos, depth, 0, nodes_mm);
         EXPECT_EQ(score_mm, result.score);
         EXPECT_LT(result.nodes, nodes_mm);
-        if(depth == 4) EXPECT_EQ(result.nodes, 114);
-        else if(depth == 5) EXPECT_EQ(result.nodes, 503);
-        else if(depth == 6) EXPECT_EQ(result.nodes, 2616);
+        if(depth == 4){ EXPECT_EQ(result.nodes, 114u); }
+        else if(depth == 5){ EXPECT_EQ(result.nodes, 503u); }
+        else if(depth == 6){ EXPECT_EQ(result.nodes, 2616u); }
     }
 }

@@ -13,7 +13,7 @@ namespace dobutsu {
         else if(gr == GameResult::TRY) return -(VALUE_MATE - ply);
         else if(gr == GameResult::REPETITION) return 0;
 
-        if(depth == 0){
+        if(depth <= 0){
             return evaluate(pos);
         }
 

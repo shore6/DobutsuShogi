@@ -2,11 +2,14 @@
 #include <cstdint>
 #include <dobutsu/types.hpp>
 #include <dobutsu/position.hpp>
+#include <dobutsu/evaluate.hpp>
+
 
 namespace dobutsu {
     
     constexpr int VALUE_MATE     = 32000;
     constexpr int VALUE_INFINITE = 32001;
+    constexpr int MAX_PLY        = 128;
 
     struct SearchLimits { int depth = 0; };
 
@@ -26,3 +29,6 @@ namespace dobutsu {
             std::uint64_t nodes_{};
     };
 }
+
+static_assert(dobutsu::VALUE_INFINITE > dobutsu::VALUE_MATE);
+static_assert(dobutsu::EVAL_MAX < dobutsu::VALUE_MATE - dobutsu::MAX_PLY);

@@ -562,6 +562,7 @@ std::string move_to_kif(const Position& pos, Move m);   // ☗2二ひよこ
 | --- | --- |
 | `show <sfen \| startpos>` | 局面を ASCII で表示する |
 | `perft <depth> [sfen]` | 各初手ごとの葉の数（divide）と合計、所要時間を表示する |
+| `match [--games N] [--depth D] [--opening K] [--seed S]` | 新しい評価（`DEFAULT_PARAMS`）と駒割だけ（`MATERIAL_ONLY`）を対局させ、勝敗と得点率を表示する（D-028） |
 | `go <depth> [sfen]` | 固定深さで探索し、最善手・評価値・ノード数・所要時間を表示する |
 | `play [--black P] [--white P] [--depth D] [--seed N] [sfen]` | 対局する。`P` は `human`（既定）・`random`・`search`。`D` は `search` の探索深さ（既定 6） |
 
@@ -603,6 +604,16 @@ std::string move_to_kif(const Position& pos, Move m);   // ☗2二ひよこ
 - **駒の可動域**：利きの数。盤が狭いため寄与は小さいと見込まれる。
 
 既存のブラウザ実装（`dobutsu-shogi.html`）が持つ評価値は、初期パラメータの出発点として使える。
+
+重みは `struct EvalParams` にまとめ、実行時に `evaluate(pos, params)` へ渡す（D-027）。
+係数を 0 にした `EvalParams` は、その項目を持たない評価関数と等価である。
+既定値 `DEFAULT_PARAMS` と、駒割だけの `MATERIAL_ONLY` を用意する。
+
+評価関数は終局していない局面に対してだけ呼ばれる（第 7.2 節）。
+相手のライオンが手番側の最奥段にいる局面は、手番が回った時点でトライが成立しているので評価されない。
+手番側のライオンが相手の最奥段にいる局面は、対局の中では到達しない（そこへ動いた直後の相手の手番で、キャッチかトライのどちらかが成立する）。
+SFEN で直接与えた場合に限り評価されうる。
+したがって、ライオン前進度の表のうち最奥段に対応する値は、対局の中では使われない。
 
 ### 7.2 探索
 

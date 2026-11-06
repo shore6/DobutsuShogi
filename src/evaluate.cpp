@@ -1,12 +1,18 @@
+#include <algorithm>
 #include <dobutsu/types.hpp>
 #include <dobutsu/evaluate.hpp>
 #include <dobutsu/position.hpp>
-
 
 namespace {
     constexpr int PIECE_VALUE[dobutsu::PIECE_TYPE_NB] = { 0, 0, 400, 300, 100, 500 };
     constexpr int HAND_VALUE[dobutsu::PIECE_TYPE_NB] = {0, 0, 400, 300, 100, 0};
 }
+
+static_assert(2 * (std::max(PIECE_VALUE[dobutsu::GIRAFFE], HAND_VALUE[dobutsu::GIRAFFE])
+                +  std::max(PIECE_VALUE[dobutsu::ELEPHANT], HAND_VALUE[dobutsu::ELEPHANT])
+                +  std::max({PIECE_VALUE[dobutsu::CHICK], PIECE_VALUE[dobutsu::HEN], HAND_VALUE[dobutsu::CHICK]}))
+                <= dobutsu::EVAL_MAX);
+
 namespace dobutsu {
     int evaluate(const Position& pos){
         int score = 0;
